@@ -7,6 +7,22 @@ import (
 
 type Consumer interface {
 	StartConsuming(queue string, d func(messages amqp091.Delivery))
+	Connection() *Connection
+	SetConnection(connection *Connection)
+	Queue() string
+	SetQueue(queue string)
+	Consumer() string
+	SetConsumer(consumer string)
+	AutoAck() bool
+	SetAutoAck(autoAck bool)
+	Exclusive() bool
+	SetExclusive(exclusive bool)
+	NoLocal() bool
+	SetNoLocal(noLocal bool)
+	NoWait() bool
+	SetNoWait(noWait bool)
+	Args() amqp091.Table
+	SetArgs(args amqp091.Table)
 }
 
 type consumer struct {
@@ -89,18 +105,18 @@ func (c *consumer) StartConsuming(queue string, d func(messages amqp091.Delivery
 		c.connection.Reconnect()
 	}
 
-	messages, err := c.connection.Channel.Consume(queue, c.consumer, c.autoAck, c.exclusive, c.noLocal, c.noWait, c.args)
+	c.queue = queue
+	messages, err := c.connection.Channel.Consume(c.queue, c.consumer, c.autoAck, c.exclusive, c.noLocal, c.noWait, c.args)
 	if err != nil {
 		fmt.Println("rabbitmq", "consumer", "queue", queue, "err", err)
 	}
+	c.handleMessages(messages, d)
+}
 
-	forever := make(chan bool)
-	go func() {
-		for m := range messages {
-			d(m)
-		}
-	}()
-	<-forever
+func (c *consumer) handleMessages(messages <-chan amqp091.Delivery, d func(messages amqp091.Delivery)) {
+	for m := range messages {
+		go d(m)
+	}
 }
 
 func NewConsumer(connection *Connection) Consumer {
