@@ -30,9 +30,7 @@ func main() {
 		Body:        []byte(message),
 	}
 
-	go func() {
-		c.StartConsuming("user.registered.queue", d)
-	}()
+	go c.StartConsuming("user.registered.queue", d)
 
 	fmt.Println(b.Publish(ctx, "user.registered", "fanout", m))
 

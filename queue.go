@@ -3,6 +3,7 @@ package kelinci
 import "github.com/rabbitmq/amqp091-go"
 
 type Queue interface {
+	Declare(name string) (amqp091.Queue, error)
 	Bind(name string, key string, exchange string) error
 	Connection() *Connection
 	SetConnection(con *Connection)
@@ -16,15 +17,53 @@ type Queue interface {
 	SetNoWait(noWait bool)
 	Args() amqp091.Table
 	SetArgs(args amqp091.Table)
+	Durable() bool
+	SetDurable(durable bool)
+	AutoDelete() bool
+	SetAutoDelete(autoDelete bool)
+	Exclusive() bool
+	SetExclusive(exclusive bool)
 }
 
 type queue struct {
-	con      *Connection
-	name     string
-	key      string
-	exchange string
-	noWait   bool
-	args     amqp091.Table
+	con        *Connection
+	name       string
+	key        string
+	exchange   string
+	noWait     bool
+	args       amqp091.Table
+	durable    bool
+	autoDelete bool
+	exclusive  bool
+}
+
+func (q *queue) Durable() bool {
+	return q.durable
+}
+
+func (q *queue) SetDurable(durable bool) {
+	q.durable = durable
+}
+
+func (q *queue) AutoDelete() bool {
+	return q.autoDelete
+}
+
+func (q *queue) SetAutoDelete(autoDelete bool) {
+	q.autoDelete = autoDelete
+}
+
+func (q *queue) Exclusive() bool {
+	return q.exclusive
+}
+
+func (q *queue) SetExclusive(exclusive bool) {
+	q.exclusive = exclusive
+}
+
+func (q *queue) Declare(name string) (amqp091.Queue, error) {
+	q.name = name
+	return q.con.Channel.QueueDeclare(q.name, q.durable, q.autoDelete, q.exclusive, q.noWait, q.args)
 }
 
 func (q *queue) Connection() *Connection {
@@ -82,14 +121,9 @@ func (q *queue) Bind(name string, key string, exchange string) error {
 	return q.con.Channel.QueueBind(q.name, q.key, q.exchange, q.noWait, q.args)
 }
 
-func NewQueueWithParams(connection *Connection, name string, key string, exchange string) Queue {
-	a := NewQueue(connection)
-	a.Bind(name, key, exchange)
-	return a
-}
-
 func NewQueue(connection *Connection) Queue {
 	a := new(queue)
 	a.con = connection
+	a.durable = true
 	return a
 }
