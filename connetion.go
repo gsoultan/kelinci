@@ -15,10 +15,13 @@ type Connection struct {
 	config        Config
 	name          string
 	conn          *amqp091.Connection
-	Channel       *amqp091.Channel
 	err           chan error
 	NotifyConfirm chan amqp091.Confirmation
 	NotifyClose   chan *amqp091.Error
+}
+
+func (c *Connection) Channel() (*amqp091.Channel, error) {
+	return c.conn.Channel()
 }
 
 func NewConnection(name string, config Config) *Connection {
@@ -50,10 +53,6 @@ func (c *Connection) Connect() error {
 		c.err <- errors.New("connection closed")
 	}()
 
-	if c.Channel, err = c.conn.Channel(); err != nil {
-		return fmt.Errorf("Channel: %s", err)
-	}
-	c.Channel.NotifyPublish(c.NotifyConfirm)
 	return nil
 }
 
@@ -71,10 +70,6 @@ func (c *Connection) Reconnect() error {
 }
 
 func (c *Connection) Close() {
-	if c.Channel != nil {
-		c.Channel.Close()
-		c.Channel = nil
-	}
 	if c.conn != nil {
 		c.conn.Close()
 		c.conn = nil

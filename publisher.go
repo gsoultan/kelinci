@@ -78,7 +78,7 @@ func (p *publisher) SetMessage(message amqp091.Publishing) {
 	p.message = message
 }
 
-func (p *publisher) Publish(ctx context.Context, exchange string, key string, msg amqp091.Publishing) error {
+func (p *publisher) Publish(ctx context.Context, exchange string, key string, msg amqp091.Publishing) (err error) {
 	if err := <-p.connection.err; err != nil {
 		p.connection.Reconnect()
 	}
@@ -87,7 +87,14 @@ func (p *publisher) Publish(ctx context.Context, exchange string, key string, ms
 	p.key = key
 	p.message = msg
 
-	return p.connection.Channel.PublishWithContext(ctx, p.exchange, p.key, p.mandatory, p.immediate, p.message)
+	var channel *amqp091.Channel
+	if channel, err = p.connection.Channel(); err != nil {
+		return err
+	}
+	defer channel.Close()
+
+	err = channel.PublishWithContext(ctx, p.exchange, p.key, p.mandatory, p.immediate, p.message)
+	return err
 }
 
 func NewPublisher(connection *Connection) Publisher {

@@ -97,10 +97,16 @@ func (e *exchange) SetArgs(args amqp091.Table) {
 	e.args = args
 }
 
-func (e *exchange) Declare(name string, kind string) error {
+func (e *exchange) Declare(name string, kind string) (err error) {
 	e.name = name
 	e.kind = kind
-	return e.conn.Channel.ExchangeDeclare(e.name, e.kind, e.durable, e.autoDelete, e.internal, e.noWait, e.args)
+
+	var channel *amqp091.Channel
+	if channel, err = e.conn.Channel(); err != nil {
+		return err
+	}
+
+	return channel.ExchangeDeclare(e.name, e.kind, e.durable, e.autoDelete, e.internal, e.noWait, e.args)
 }
 
 func NewExchange(conn *Connection) Exchange {

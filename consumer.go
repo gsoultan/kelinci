@@ -106,7 +106,11 @@ func (c *consumer) StartConsuming(queue string, d func(messages amqp091.Delivery
 	}
 
 	c.queue = queue
-	messages, err := c.connection.Channel.Consume(c.queue, c.consumer, c.autoAck, c.exclusive, c.noLocal, c.noWait, c.args)
+
+	var channel *amqp091.Channel
+	channel, _ = c.connection.Channel()
+
+	messages, err := channel.Consume(c.queue, c.consumer, c.autoAck, c.exclusive, c.noLocal, c.noWait, c.args)
 	if err != nil {
 		fmt.Println("rabbitmq", "consumer", "queue", queue, "err", err)
 	}

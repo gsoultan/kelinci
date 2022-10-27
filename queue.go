@@ -63,7 +63,8 @@ func (q *queue) SetExclusive(exclusive bool) {
 
 func (q *queue) Declare(name string) (amqp091.Queue, error) {
 	q.name = name
-	return q.con.Channel.QueueDeclare(q.name, q.durable, q.autoDelete, q.exclusive, q.noWait, q.args)
+	channel, _ := q.con.Channel()
+	return channel.QueueDeclare(q.name, q.durable, q.autoDelete, q.exclusive, q.noWait, q.args)
 }
 
 func (q *queue) Connection() *Connection {
@@ -114,11 +115,17 @@ func (q *queue) SetArgs(args amqp091.Table) {
 	q.args = args
 }
 
-func (q *queue) Bind(name string, key string, exchange string) error {
+func (q *queue) Bind(name string, key string, exchange string) (err error) {
 	q.name = name
 	q.key = key
 	q.exchange = exchange
-	return q.con.Channel.QueueBind(q.name, q.key, q.exchange, q.noWait, q.args)
+
+	var channel *amqp091.Channel
+	if channel, err = q.con.Channel(); err != nil {
+		return err
+	}
+
+	return channel.QueueBind(q.name, q.key, q.exchange, q.noWait, q.args)
 }
 
 func NewQueue(connection *Connection) Queue {
