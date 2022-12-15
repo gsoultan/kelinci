@@ -11,7 +11,7 @@ type Config struct {
 }
 
 func (c *Config) GetUri() string {
-	return fmt.Sprintf("amqp://%s:%s@%s/", c.UserName, c.Password, c.Host)
+	return fmt.Sprintf("amqp://%s:%s@%s%s", c.UserName, c.Password, c.Host, c.VHost)
 }
 
 // ConfigBuilder Builder Object for Config
